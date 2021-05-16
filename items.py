@@ -1,12 +1,5 @@
-actions = {
-    'install_jenkins_key': {
-        'command': 'wget -q -O - https://pkg.jenkins.io/debian/jenkins.io.key | apt-key add -',
-        'unless': 'apt-key list | grep "D505 82E6"',
-        'cascade_skip': False
-    }
-}
-
 directories = {}
+files = {}
 
 if not node.has_bundle('jenkins-ssh'):
     directories['/var/lib/jenkins/.ssh'] = {
@@ -16,16 +9,17 @@ if not node.has_bundle('jenkins-ssh'):
         'needs': ['pkg_apt:jenkins']
     }
 
-files = {
-    '/etc/apt/sources.list.d/jenkins.list': {
+if node.has_bundle('apt'):
+    files['/etc/apt/sources.list.d/jenkins.list'] = {
         'content': 'deb https://pkg.jenkins.io/debian binary/',
-        'owner': 'root',
-        'group': 'root',
-        'mode': '0644',
-        'needs': ['action:install_jenkins_key'],
-        'triggers': ['action:update_apt_cache']
+        'content_type': 'text',
+        'needs': ['file:/etc/apt/trusted.gpg.d/jenkins.gpg', ],
+        'triggers': ["action:force_update_apt_cache", ],
     }
-}
+
+    files['/etc/apt/trusted.gpg.d/jenkins.gpg'] = {
+        'content_type': 'binary',
+    }
 
 if not node.has_bundle('jenkins-ssh'):
     files['/var/lib/jenkins/.ssh/id_ed25519'] = {
